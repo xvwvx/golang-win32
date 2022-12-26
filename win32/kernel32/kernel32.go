@@ -74,6 +74,16 @@ func Process32FirstW(hSnapshot win32.HANDLE, lppe LPPROCESSENTRY32W) (bool, erro
 	return false, lastErr
 }
 
+func Process32NextW(hSnapshot win32.HANDLE, lppe LPPROCESSENTRY32W) (bool, error) {
+	_, _, lastErr := process32NextW.Call(
+		uintptr(hSnapshot),
+		uintptr(unsafe.Pointer(lppe)))
+	if lastErr.(syscall.Errno) == 0 {
+		return true, nil
+	}
+	return false, lastErr
+}
+
 // Thread32First Win32 API wrapper
 func Thread32First(hSnapshot win32.HANDLE, lpte LPTHREADENTRY32) (bool, error) {
 	_, _, lastErr := thread32First.Call(
@@ -88,6 +98,26 @@ func Thread32First(hSnapshot win32.HANDLE, lpte LPTHREADENTRY32) (bool, error) {
 // Thread32Next Win32 API wrapper
 func Thread32Next(hSnapshot win32.HANDLE, lpte LPTHREADENTRY32) (bool, error) {
 	_, _, lastErr := thread32First.Call(
+		uintptr(hSnapshot),
+		uintptr(unsafe.Pointer(lpte)))
+	if lastErr.(syscall.Errno) == 0 {
+		return true, nil
+	}
+	return false, lastErr
+}
+
+func Module32FirstW(hSnapshot win32.HANDLE, lpte LPMODULEENTRY32) (bool, error) {
+	_, _, lastErr := module32FirstW.Call(
+		uintptr(hSnapshot),
+		uintptr(unsafe.Pointer(lpte)))
+	if lastErr.(syscall.Errno) == 0 {
+		return true, nil
+	}
+	return false, lastErr
+}
+
+func Module32NextW(hSnapshot win32.HANDLE, lpte LPMODULEENTRY32) (bool, error) {
+	_, _, lastErr := module32NextW.Call(
 		uintptr(hSnapshot),
 		uintptr(unsafe.Pointer(lpte)))
 	if lastErr.(syscall.Errno) == 0 {
@@ -174,6 +204,50 @@ func GetModuleHandleW(lpModuleName string) (win32.HANDLE, error) {
 		return win32.HANDLE(win32.NULL), lastErr
 	}
 	return win32.HANDLE(r1), nil
+}
+
+func GetModuleHandleA(modulename string) (win32.HANDLE, error) {
+	var mn uintptr
+	if modulename == "" {
+		mn = 0
+	} else {
+		bytes := []byte(modulename)
+		mn = uintptr(unsafe.Pointer(&bytes[0]))
+	}
+	ret, _, err := getModuleHandleA.Call(mn)
+	if err.(syscall.Errno) != 0  {
+		return 0, err
+	}
+	return win32.HANDLE(ret), nil
+}
+
+func GetProcAddress(handle win32.HANDLE, name string) (win32.HANDLE, error) {
+	ptr, err := syscall.BytePtrFromString(name)
+	if err != nil {
+		return 0, err
+	}
+	ret, _, err := getProcAddress.Call(uintptr(handle), uintptr(unsafe.Pointer(ptr)))
+	if err.(syscall.Errno) != 0  {
+		return 0, err
+	}
+	return win32.HANDLE(ret), nil
+}
+
+func CreateRemoteThread(hprocess win32.HANDLE, sa *syscall.SecurityAttributes,
+	stackSize uint32, startAddress uint32, parameter uintptr, creationFlags uint32) (win32.HANDLE, uint32, error) {
+	var threadId uint32
+	r1, _, err := createRemoteThread.Call(
+		uintptr(hprocess),
+		uintptr(unsafe.Pointer(sa)),
+		uintptr(stackSize),
+		uintptr(startAddress),
+		uintptr(parameter),
+		uintptr(creationFlags),
+		uintptr(unsafe.Pointer(&threadId)))
+	if err.(syscall.Errno) != 0  {
+		return 0, 0, err
+	}
+	return win32.HANDLE(r1), threadId, nil
 }
 
 // GetModuleFilename Win32 API wrapper

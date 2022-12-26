@@ -118,6 +118,28 @@ func NewProcessEntry32W() PROCESSENTRY32W {
 	return PROCESSENTRY32W{DwSize: win32.DWORD(unsafe.Sizeof(PROCESSENTRY32W{}))}
 }
 
+type MODULEENTRY32 struct {
+	DwSize        win32.DWORD
+	Th32ModuleID  uint32
+	Th32ProcessID uint32
+	GlblcntUsage  uint32
+	ProccntUsage  uint32
+	ModBaseAddr   uintptr
+	ModBaseSize   uint32
+	Module        win32.HANDLE
+	SzModule      [win32.MAX_MODULE_NAME32 + 1]uint16
+	SzExePath     [win32.MAX_PATH]uint16
+}
+
+type LPMODULEENTRY32 *MODULEENTRY32
+type LPCMODULEENTRY32 *MODULEENTRY32
+
+func NewModuleEntry32() MODULEENTRY32 {
+	entry := MODULEENTRY32{}
+	entry.DwSize = win32.DWORD(unsafe.Sizeof(entry))
+	return entry
+}
+
 type MODULEINFO struct {
 	LpBaseOfDll win32.LPVOID
 	// Size of the image mapped in memory
